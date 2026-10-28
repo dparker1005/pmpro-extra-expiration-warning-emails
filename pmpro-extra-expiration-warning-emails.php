@@ -194,15 +194,19 @@ function pmproeewe_extra_emails() {
 
 				$euser->membership_level = pmpro_getSpecificMembershipLevelForUser( $euser->ID, $e->membership_id );
 				
+				// Don't send to members who turned off membership expiration reminders. Core also skips the default template for them.
+				$opted_out = ! empty( $expiring_email_category ) && pmpro_is_user_opted_out_of_email_category( $euser->ID, $expiring_email_category );
+				if ( $opted_out ) {
+					pmproeewe_log( sprintf( 'Skipped user ID %d: opted out of membership expiration reminders.', $e->user_id ) );
+				}
+
 				// Only actually send the message if we're not testing.
-				if ( apply_filters( 'pmproeewe_send_reminder_to_user', true, $euser ) ) {
+				if ( ! $opted_out && apply_filters( 'pmproeewe_send_reminder_to_user', true, $euser ) ) {
 					if ( ! pmproeewe_is_test() ) {
 						// If we are sending the default 'membership_expiring' template, let core PMPro handle it.
 						if ( $email_template === 'membership_expiring' ) {
 							$pmproemail = new PMProEmail();
 							$pmproemail->sendMembershipExpiringEmail( $euser, $e->membership_id );
-						} elseif ( ! empty( $expiring_email_category ) && pmpro_is_user_opted_out_of_email_category( $euser->ID, $expiring_email_category ) ) {
-							pmproeewe_log( sprintf( 'Skipped user ID %d: opted out of membership expiration reminders.', $e->user_id ) );
 						} else {
 							// Send the custom template email.
 							$pmproemail = new PMProEmail();
