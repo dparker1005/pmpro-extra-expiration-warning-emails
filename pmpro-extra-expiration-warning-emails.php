@@ -118,6 +118,10 @@ function pmproeewe_extra_emails() {
 		add_filter( 'pmpro_email_headers', 'pmproeewe_add_admin_as_bcc' );
 	}
 
+	// Custom templates aren't PMPro email templates, so core can't check members' email preferences for them.
+	// Follow the member's preference for the Membership Expiring email instead.
+	$expiring_email_category = function_exists( 'pmpro_get_email_template_category' ) ? pmpro_get_email_template_category( 'membership_expiring' ) : '';
+
 	// Use a dummy meta value for tests.
 	$meta = pmproeewe_is_test() ? 'pmproewee_expiration_test_notice_' : 'pmproewee_expiration_notice_';
 
@@ -197,6 +201,8 @@ function pmproeewe_extra_emails() {
 						if ( $email_template === 'membership_expiring' ) {
 							$pmproemail = new PMProEmail();
 							$pmproemail->sendMembershipExpiringEmail( $euser, $e->membership_id );
+						} elseif ( ! empty( $expiring_email_category ) && pmpro_is_user_opted_out_of_email_category( $euser->ID, $expiring_email_category ) ) {
+							pmproeewe_log( sprintf( 'Skipped user ID %d: opted out of membership expiration reminders.', $e->user_id ) );
 						} else {
 							// Send the custom template email.
 							$pmproemail = new PMProEmail();
